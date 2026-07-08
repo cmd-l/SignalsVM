@@ -464,9 +464,9 @@ Jubail Industrial College -->
 					# Specify time limits and dt
 
 					if transform == True:
-						shifts = np.array([eval(i.replace("t","").replace("n","").replace(")","").replace("]",""))*-1 for i in re.findall(f"([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(eval(fun)).split()))])
+						shifts = np.array([eval(i.replace("t","").replace("n","").replace(")","").replace("]",""))*-1 for i in re.findall(f"[n|t]([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(eval(fun)).split()))])
 					else:
-						shifts = np.array([eval(i.replace("t","").replace("n","").replace(")","").replace("]",""))*-1 for i in re.findall(f"([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(x).split()))])
+						shifts = np.array([eval(i.replace("t","").replace("n","").replace(")","").replace("]",""))*-1 for i in re.findall(f"[n|t]([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(x).split()))])
 					
 					fun0 = fun.replace("rect","rec").replace("DiracDelta","dela").replace("tan","XXX").replace("cot","YYY").replace("sin","ZZZ").replace("tri","ri").replace("sgn","sg")
 					zeros  = re.findall(r"[+|-]\d+|\D[t|n]\D|", "".join(fun0.split()))
