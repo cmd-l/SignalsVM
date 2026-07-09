@@ -327,7 +327,7 @@ Jubail Industrial College -->
 												asin,acos,atan,acot,asec,acsc,\
 												sinh,cosh,tanh,coth,sech,csch,\
 												sympify, preorder_traversal, solve,\
-												integrate, oo, simplify, Integral, sqrt,Abs
+												integrate, oo, simplify, Integral, sqrt, Abs, Piecewise
 			import re
 			import math
 			from bokeh.models import FuncTickFormatter
@@ -455,7 +455,7 @@ Jubail Industrial College -->
 			# Convert symbolic to numerical list
 			def sym_num(x,fun,signal_type,divide=1,multi=1,shift=0,transform = False):
 				try:
-					num_fun = {'DiracDelta': delta_num, 'Heaviside': unit_num}
+					num_fun = {'DiracDelta': delta_num,'Heaviside': unit_num}
 					if signal_type == "Discrete":
 						f = lambdify(n, x, modules=[num_fun, 'numpy'])
 					else:
@@ -464,13 +464,14 @@ Jubail Industrial College -->
 					# Specify time limits and dt
 
 					if transform == True:
-						shifts = np.array([eval(i.replace("t","").replace("n","").replace(")","").replace("]",""))*-1 for i in re.findall(f"[n|t]([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(eval(fun)).split()))])
+						shifts = np.array([eval("".join(i).replace("(",""))*-1 for i in re.findall(f"([-|()])[n|t]([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(eval(fun)).split()))])
+						z = ["".join(i).replace("(","").replace(")","") for i in re.findall(f"\D[t|n][)]|\D[t|n]\D","".join(str(eval(fun)).split()))]
 					else:
-						shifts = np.array([eval(i.replace("t","").replace("n","").replace(")","").replace("]",""))*-1 for i in re.findall(f"[n|t]([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(x).split()))])
+						shifts = np.array([eval("".join(i).replace("(",""))*-1 for i in re.findall(f"([-|()])[n|t]([+|-]\d+\.\d+|[+|-]\d+)\D", "".join(str(x).split()))])
+						z = ["".join(i).replace("(","").replace(")","") for i in re.findall(f"\D[t|n][)]|\D[t|n]\D","".join(str(x).split()))]
 					
-					fun0 = fun.replace("rect","rec").replace("DiracDelta","dela").replace("tan","XXX").replace("cot","YYY").replace("sin","ZZZ").replace("tri","ri").replace("sgn","sg")
-					zeros  = re.findall(r"[+|-]\d+|\D[t|n]\D|", "".join(fun0.split()))
-					if "(t)" in zeros or "(n)" in zeros:
+
+					if "t" in z or "t/" in z or "-t/" in z or "*t" in z or "-t" in z or "n" in z or "n/" in z or "-n/" in z or "*n" in z or "-n" in z:
 						shifts = np.append(shifts,0)
 
 					scaling  = divide/multi
@@ -700,7 +701,7 @@ Jubail Industrial College -->
 					# Select the scale type
 					x_scale, y_scale = scaling(scale_type, is_radian)
 
-					output_div.innerText = "" #f"{chfun} = {str(y)}"
+					output_div.innerText =  y #f"{chfun} = {str(y)}"
 
 					# Plotting the function
 					if signal_type == "Continuous":
@@ -710,7 +711,7 @@ Jubail Industrial College -->
 
 				except: 
 					if signal_type == "Continuous":
-						output_div.innerText = "Unexpected error, please avoid using tri and sgn functions and ensure that the x(t) and the h(t) are properly typed!!"
+						output_div.innerText = "Unexpected error, please avoid using tri, sgn and unlimited functions and ensure that the x(t) and the h(t) are properly typed!!"
 					else:
 						output_div.innerText = "Unexpected error, please make sure that the x[n] and the h[n] are properly typed!!"
 
