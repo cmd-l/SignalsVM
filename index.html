@@ -78,13 +78,13 @@
       </div>
 	    </div>
 	    <div id="UserInput2c" style="float:left; width: 100%; min-width:405px; max-height: 400px; color: #354649; margin-botom: 5px; padding: 5px; font-size: 20px; margin: 4px 2px;">
-	    	<p style="font-size: 24px; flex-wrap: wrap; font-family: Courier New, monospace;"><b>Type y(t) as a function of x(t): (Please follow A*x(at+b)+B)</b>
+	    	<p style="font-size: 24px; flex-wrap: wrap; font-family: Courier New, monospace;"><b>Type y(t) as a function of x(t): (Please follow A*x(a*t+b)+B)</b>
 			</div>
 	    <div id="UserInput4c" style="float:left; width: 100%; min-width:405px; max-height: 400px; color: #354649; margin-botom: 5px; padding: 5px; font-size: 20px; margin: 4px 2px;">
 	    	<p style="font-size: 24px; flex-wrap: wrap; font-family: Courier New, monospace;"><b>Type the impulse response h(t) of LTI system:</b>
 			</div>
 	    <div id="UserInput2d" style="float:left; width: 100%; min-width:405px; max-height: 400px; color: #354649; margin-botom: 5px; padding: 5px; font-size: 20px; margin: 4px 2px;">
-	    	<p style="font-size: 24px; flex-wrap: wrap; font-family: Courier New, monospace;"><b>Type y[n] as a function of x[n]: (Please follow A*x[an+b]+B)</b>
+	    	<p style="font-size: 24px; flex-wrap: wrap; font-family: Courier New, monospace;"><b>Type y[n] as a function of x[n]: (Please follow A*x[a*n+b]+B)</b>
 			</div>
 	    <div id="UserInput4d" style="float:left; width: 100%; min-width:405px; max-height: 400px; color: #354649; margin-botom: 5px; padding: 5px; font-size: 20px; margin: 4px 2px;">
 	    	<p style="font-size: 24px; flex-wrap: wrap; font-family: Courier New, monospace;"><b>Type the impulse response h[n] of LTI system:</b>
@@ -380,14 +380,27 @@
 
 			# Apply Transformation
 			def transformation(x,y):
-				if len(re.findall(f"[n|t](\W\W)\d+|[)](\W\W)\d+|\d+(\W\W)[x]",y)) != 0:
-					raise ValueError("Either unexpected error in your function x(t) or y(t)!!")
-				y = "".join(y.split()).replace('[', '((').replace(']', '))').replace(')', '))').replace('(', '((')
+				y = "".join(y.split()).replace('[', '(').replace(']', ')').replace(')', '))').replace('(', '((')
 				trans = re.search(f"(.*)x[(](.*)[)](.*)", y)
 
 				# Controling the expression of transformation to a specific format A*x(t)+B or A*x(t)-B
-				if ("*" not in trans[1] and trans[1] != '') or ("+" not in trans[3] and "-" not in trans[3] and trans[3] != '') or (not str(int(round(eval(trans[1][:-1]),0))).isdigit()) or (not str(int(round(eval(trans[3][1:]),0))).isdigit()):
+				if len(trans[1]) > 0:
+					try:
+						test = eval(trans[1] + "1")
+						if trans[1][-1] != "*":
+							raise ValueError("Either unexpected error in your function x(t) or y(t)!!")
+					except: raise ValueError("Either unexpected error in your function x(t) or y(t)!!")
+				
+				if len(trans[3]) > 0:
+					try: 
+						test = eval(trans[3])
+						if trans[3][0] != "-" and trans[3][0] != "+":
+							raise ValueError("Either unexpected error in your function x(t) or y(t)!!")
+					except: raise ValueError("Either unexpected error in your function x(t) or y(t)!!")
+
+				if trans[2][0] != "(" and trans[2][-1] != ")":
 					raise ValueError("Either unexpected error in your function x(t) or y(t)!!")
+						
 
 
 				# Assign default values if the amplitude transformation does not exist
@@ -403,34 +416,36 @@
 				y2 = y1.replace("rec","rect").replace("dela","DiracDelta").replace("XXX","tan").replace("YYY","cot").replace("ZZZ","sin").replace("ri","tri").replace("sg","sgn")
 				y3 = eval(y2)
 
-				# Get time transformations separately
-				t1  = re.findall(f"([\D]0.\d+\D[t|n]|[\D]\d+\D[t|n])", y)
-				t2  = re.findall(f"([\D][t|n][\D|^/]\d+.\d+|[t|n][^/]\d+)", y)
-				if len(t2) > 0:
-					if "*t+" in t2[0] or "*t-" in t2[0]:
-						t2 = []
-				t3  = re.findall(f"([t|n]/0.\d+|[t|n]/\d+)", y)
-				t4 = re.findall(f"([+|-][t|n]/0.\d+|[+|-][t|n]/\d+)", y)
-				tsr = t1 + t2 + t3 + t4
+				try: 
+					shift = re.findall(f"[^*]([+|-]\d+|[+|-]\d+\.\d+|[+|-]\d+\W\d+|[+|-]\d+\.\d+\W\d+|[+|-]\d+\.\d+\W\d+\.\d+|[+|-]\d+\W\d+\.\d+)[)]", y)
+					shift_n = eval(shift[0])
+				except: shift_n = 0
 
-				ts  = re.findall(f"([+|-]\d+.\d+|[+|-]\d+\D)", y)
+				ope = "".join(list(re.findall(f"x(.*)[t|n](.*)[)]",y.replace("(",""))[0]))
+				if len(ope) > 0 and ope != ")":
+					try: ope = ope.replace(shift[0] + ")","")
+					except: ope = ope.replace(")","")
 
-				divide = 1
-				multi  = 1
-				t5 = re.findall(f"([+|-][t|n])", y)
-				if len(tsr) == 0 and len(t5) > 0:
-					multi = eval(t5[0].replace("t","1").replace("n","1"))
-				try: shift = eval(ts[len(ts)-1].replace(")",""))
-				except: shift = 0
-				for sr in tsr:
-					tmp = sr.replace("t","").replace("n","").replace("*","").replace("/","").replace("(","").replace("[","")
-					if "/" in sr:
-						divide = eval(tmp)
-					elif "*" in sr:
-						multi  = eval(tmp)
+					ope = ope.replace("*/","/").replace("-/","-1/").replace("+/","+1/").replace("-*","-1*").replace("+*","+1*").replace("**","*").replace("//","/").replace("//","/")
+
+				    
+					if len(ope) == 1 and (ope == "-" or ope == "+"):
+						ope = ope.replace("+","+1").replace("-","-1")
+					elif len(ope) > 1:
+						if ope[0] == "/":
+							ope = "1" + ope
+						elif ope[-1] == "*":
+							ope = ope[:-1]
+					elif len(ope) == 0:
+						ope = "1"
+				else:
+					ope = "1"
+
+				scale = eval(ope)
+
 
 				# All Transformations
-				return f"{A}*({y2})+{B}",A*y3+B,divide,multi,shift
+				return f"{A}*({y2})+{B}",A*y3+B,scale,shift_n, A, B
 
 
 			def convolve(x,h,signal_type):
@@ -450,7 +465,7 @@
 
 
 			# Convert symbolic to numerical list
-			def sym_num(x,fun,signal_type,divide=1,multi=1,shift=0,transform = False):
+			def sym_num(x,fun,signal_type,scale=1,shift=0,transform = False):
 				try:
 					num_fun = {'DiracDelta': delta_num,'Heaviside': unit_num}
 					if signal_type == "Discrete":
@@ -471,19 +486,18 @@
 					if "t" in z or "t/" in z or "-t/" in z or "*t" in z or "-t" in z or "n" in z or "n/" in z or "-n/" in z or "*n" in z or "-n" in z:
 						shifts = np.append(shifts,0)
 
-					scaling  = divide/multi
-					shifting = shift*scaling
+					shifting = shift/scale
 
 					try:
-						if scaling == 1 and shifting == 0:
+						if scale == 1 and shifting == 0:
 							mini = math.floor(min(shifts)-2)
 							maxi = math.ceil(max(shifts)+2)
-						elif scaling > 0:
-							mini = math.floor(min(shifts)*scaling-2-shifting)
-							maxi = math.ceil(max(shifts)*scaling+2-shifting)
-						elif scaling < 0:
-							mini = math.floor(max(shifts)*scaling-2-shifting)
-							maxi = math.ceil(min(shifts)*scaling+2-shifting)
+						elif scale > 0:
+							mini = math.floor(min(shifts)/scale-2-shifting)
+							maxi = math.ceil(max(shifts)/scale+2-shifting)
+						elif scale < 0:
+							mini = math.floor(max(shifts)/scale-2-shifting)
+							maxi = math.ceil(min(shifts)/scale+2-shifting)
 					except:
 						mini = -20
 						maxi = +20
@@ -580,6 +594,7 @@
 					p.xaxis.ticker = [i for i in range(mini, maxi+1,steps)]
 
 
+
 				await Bokeh.embed.embed_item(ffi.to_js(json_item(p, f"{chart}")))
 
 			async def fun1(event):
@@ -644,17 +659,18 @@
 
 				try:
 					if control == "transform": 
-						f, y,divide,multi,shift = transformation(fun,fun_new)
+						f, y,scale,shift, A, B = transformation(fun,fun_new)
 						transform = True
 					else: 
 						y = eval(fun) 
-						divide =1 
-						multi = 1 
+						scale = 1
 						shift = 0
+						A = 0
+						B = 0
 						transform = False
 
 					# Specify the minimum and maximum t-axis
-					time, f, mini, maxi, is_radian = sym_num(y,fun,signal_type,divide,multi,shift,transform)
+					time, f, mini, maxi, is_radian = sym_num(y,fun,signal_type,scale,shift,transform)
 
 					# Select the scale type
 					x_scale, y_scale = scaling(scale_type, is_radian)
@@ -664,7 +680,15 @@
 						await plotting(time,f,mini,maxi,chfun,"chart2",is_radian,x_scale,y_scale,signal_type)
 					else:
 						await plotting(time,f,mini,maxi,chfun,"chart2",is_radian,x_scale,y_scale,signal_type)
-					output_div.innerText = y#"" #f"{chfun} = {fun}"
+
+					if transform == True:
+						output_div.innerText = f"Time Scaleing [a]: {scale}  \n \
+																		 Time Shifting [b]: {shift}  \n \
+																		 Amplitude Scaling [A]: {A}  \n \
+																		 Amplitude Shifting [B]: {B} \n \
+																		 {chfun} = {y}"#"" #f"{chfun} = {fun}"
+					else:
+						output_div.innerText = y #"" #f"{chfun} = {fun}"
 
 				except: 
 					if signal_type == "Continuous" and control == "transform":
@@ -698,7 +722,7 @@
 					# Select the scale type
 					x_scale, y_scale = scaling(scale_type, is_radian)
 
-					output_div.innerText =  y #f"{chfun} = {str(y)}"
+					output_div.innerText =  str(y).replace("Heaviside","u").replace("**","^").replace("exp","e^") #f"{chfun} = {str(y)}"
 
 					# Plotting the function
 					if signal_type == "Continuous":
