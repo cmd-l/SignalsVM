@@ -692,9 +692,9 @@
 
 				except: 
 					if signal_type == "Continuous" and control == "transform":
-							output_div.innerText = f"Either unexpected error in your function x(t) or {chfun}!!\n Please Try to type it as A*x(at+b)+B"
+							output_div.innerText = f"Either unexpected error in your function x(t) or {chfun}!!\n Please Try to type it as A*x(a*t+b)+B"
 					elif signal_type == "Discrete" and control == "transform":
-							output_div.innerText = f"Either unexpected error in your function x[n] or {chfun}!!\n Please Try to type it as A*x[an+b]+B"
+							output_div.innerText = f"Either unexpected error in your function x[n] or {chfun}!!\n Please Try to type it as A*x[a*n+b]+B"
 					if signal_type == "Continuous" and control == "convolve":
 							output_div.innerText = f"Unexpected error in your function {chfun}!!"
 					elif signal_type == "Discrete" and control == "convolve":
